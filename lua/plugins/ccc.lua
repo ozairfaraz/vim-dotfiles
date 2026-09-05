@@ -5,10 +5,10 @@ return {
   cmd = { "CccPick", "CccHighlighterToggle", "CccConvert" },
   opts = {
     highlighter = {
-      auto_enable = true, -- enable highlight automatically
-      lsp = true, -- highlight colors from LSP too
+      auto_enable = false, -- disabled for hipatterns (best highlighter) - keep ccc as picker only
+      lsp = false,
     },
-    highlight_mode = "virtual", -- small circles next to the declaration
+    highlight_mode = "virtual", -- small circles if you :CccHighlighterToggle
   },
   keys = {
     { "<leader>uC", "<cmd>CccPick<CR>", desc = "Pick color" },

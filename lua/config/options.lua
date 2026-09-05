@@ -49,6 +49,17 @@ if vim.fn.isdirectory(go_bin) == 1 then
   vim.env.PATH = go_bin .. ":" .. vim.env.PATH
 end
 
+-- Animations (ensure not disabled by shada/toggle)
+vim.g.snacks_animate = true
+vim.g.minianimate_disable = false
+vim.api.nvim_create_autocmd("User", {
+  pattern = "VeryLazy",
+  callback = function()
+    vim.g.minianimate_disable = false
+    vim.b.minianimate_disable = false
+  end,
+})
+
 -- Cursor
 vim.opt.guicursor = {
   "n-v-c:block", -- Normal, Visual, Command-line
