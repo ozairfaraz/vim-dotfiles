@@ -1,0 +1,24 @@
+return {
+  "mg979/vim-visual-multi",
+  -- canonical per vim-visual-multi/doc/vm-mappings.txt:5 and doc/vm-faq.txt:30
+  -- Alt+j/k for vertical cursors, Space+m for Select All (terminal-safe)
+  init = function()
+    vim.g.VM_maps = {
+      ["Select All"] = "<leader>m",
+      ["Visual All"] = "<leader>m",
+      ["Add Cursor Down"] = "<M-j>", -- Alt+j: add cursor below (vertical)
+      ["Add Cursor Up"] = "<M-k>", -- Alt+k: add cursor above
+    }
+    vim.opt.timeout = true
+    vim.opt.ttimeout = true
+    vim.opt.timeoutlen = 300
+    vim.opt.ttimeoutlen = 50 -- 50ms forgiving for GNOME Terminal (was 10)
+  end,
+  config = function()
+    -- 100% terminal-safe fallback if Alt is swallowed (Space+j/k + Ctrl+Down)
+    vim.keymap.set({ "n", "x" }, "<leader>j", "<Plug>(VM-Add-Cursor-Down)", { desc = "VM Add Cursor Down (Space+j)", remap = true, silent = true, nowait = true })
+    vim.keymap.set({ "n", "x" }, "<leader>k", "<Plug>(VM-Add-Cursor-Up)", { desc = "VM Add Cursor Up (Space+k)", remap = true, silent = true, nowait = true })
+    vim.keymap.set({ "n", "x" }, "<C-Down>", "<Plug>(VM-Add-Cursor-Down)", { desc = "VM Add Cursor Down (Ctrl+Down)", remap = true, silent = true })
+    vim.keymap.set({ "n", "x" }, "<C-Up>", "<Plug>(VM-Add-Cursor-Up)", { desc = "VM Add Cursor Up (Ctrl+Up)", remap = true, silent = true })
+  end,
+}

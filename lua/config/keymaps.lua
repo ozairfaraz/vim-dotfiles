@@ -78,9 +78,31 @@ end, { desc = "Copy full file path" })
 
 -- Git quick actions (add / commit / push) - best fix for missing workflow
 -- Keeps lazygit as primary UI (<leader>gg), adds direct keys for the 3 most common ops
+-- Robust git_root: prefers buffer's git root (Snacks) then LazyVim root then cwd
+-- Fixes space+g+d Command failed (exit 129 Not a git repo) when nvim started outside repo
 local function git_root()
+  -- 1. try Snacks git root from current buffer file (most reliable)
+  local buf = vim.api.nvim_get_current_buf()
+  local file = vim.api.nvim_buf_get_name(buf)
+  if file ~= "" then
+    local ok, r = pcall(function() return Snacks.git.get_root(file) end)
+    if ok and r and r ~= "" then return r end
+    -- fallback: fs.find .git upward from file
+    local git = vim.fs.find(".git", { path = file, upward = true })[1]
+    if git then return vim.fn.fnamemodify(git, ":h") end
+  end
+  -- 2. LazyVim root (handles lsp + pattern + cwd)
   local ok, r = pcall(function() return LazyVim.root.git() end)
-  if ok and r and r ~= "" then return r end
+  if ok and r and r ~= "" then
+    -- verify it's actually a git repo, else continue
+    if vim.fn.isdirectory(r .. "/.git") == 1 or Snacks.git.get_root(r) then return r end
+  end
+  -- 3. Snacks git root from cwd
+  do
+    local cwd = vim.fn.getcwd()
+    local ok2, r2 = pcall(function() return Snacks.git.get_root(cwd) end)
+    if ok2 and r2 and r2 ~= "" then return r2 end
+  end
   return vim.fn.getcwd()
 end
 
@@ -143,3 +165,56 @@ map("n", "<leader>gpu", function()
   local root = git_root()
   Snacks.terminal({ "git", "pull" }, { cwd = root })
 end, { desc = "Git Pull" })
+
+-- Fix Snacks git pickers: ensure they use git root not vim cwd (fixes `space+g+d` Command failed when nvim started outside repo)
+-- Overrides LazyVim snacks_picker.lua:75-78 which uses vim cwd and fails with `Not a git repository` (exit 129)
+-- Best practice minimal stack: gitsigns + snacks picker + lazygit (no diffview/neogit needed for light usage)
+local function with_git_root(picker, extra)
+  return function()
+    local root = git_root()
+    if vim.fn.isdirectory(root .. "/.git") ~= 1 and Snacks.git.get_root(root) == nil then
+      vim.notify("Not in a git repository (git_root=" .. root .. ", cwd=" .. vim.fn.getcwd() .. ")", vim.log.levels.WARN)
+      return
+    end
+    extra = extra or {}
+    -- clone to avoid mutating shared table across calls (fix for gL which passed cwd=git_root() at define time)
+    local opts = vim.tbl_deep_extend("force", {}, extra)
+    opts.cwd = root
+    Snacks.picker[picker](opts)
+  end
+end
+
+-- hunk/status pickers (most used)
+map("n", "<leader>gd", with_git_root("git_diff"), { desc = "Git Diff (hunks) [fix cwd]" })
+map("n", "<leader>gs", with_git_root("git_status"), { desc = "Git Status [fix cwd]" })
+map("n", "<leader>gS", with_git_root("git_stash"), { desc = "Git Stash [fix cwd]" })
+-- origin diff (grouped)
+map("n", "<leader>gD", function()
+  local root = git_root()
+  if vim.fn.isdirectory(root .. "/.git") ~= 1 and Snacks.git.get_root(root) == nil then
+    vim.notify("Not in a git repository", vim.log.levels.WARN)
+    return
+  end
+  Snacks.picker.git_diff({ cwd = root, base = "origin", group = true })
+end, { desc = "Git Diff (origin) [fix cwd]" })
+-- log pickers
+map("n", "<leader>gl", with_git_root("git_log"), { desc = "Git Log [fix cwd]" })
+map("n", "<leader>gL", with_git_root("git_log"), { desc = "Git Log (cwd) [fix cwd]" })
+map("n", "<leader>gf", with_git_root("git_log_file"), { desc = "Git Current File History [fix cwd]" })
+map("n", "<leader>gb", with_git_root("git_log_line"), { desc = "Git Blame Line [fix cwd]" })
+-- Recommended: keep <leader>gP as push (more frequent than gh_pr all), gp stays gh_pr open, gi stays gh_issue
+-- gh_pr(all) still via :lua Snacks.picker.gh_pr({state="all"}) if needed
+
+-- Manual cwd helpers (complement AutoRootCwd - useful when you want file dir instead of root)
+map("n", "<leader>cr", function()
+  local root = LazyVim.root.get()
+  vim.fn.chdir(root)
+  vim.notify("cwd -> " .. root, vim.log.levels.INFO)
+end, { desc = "cd to root" })
+map("n", "<leader>cfd", function()
+  local dir = vim.fn.expand("%:p:h")
+  if dir ~= "" then
+    vim.cmd.lcd(dir)
+    vim.notify("lcd -> " .. dir, vim.log.levels.INFO)
+  end
+end, { desc = "lcd to file dir" })

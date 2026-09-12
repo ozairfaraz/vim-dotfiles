@@ -1,0 +1,17 @@
+return {
+  "mg979/vim-visual-multi",
+  -- Kitty: C-Down not transmitted, use \j/\k per docs. Also add Ctrl+j/k as you asked.
+  init = function()
+    vim.g.VM_maps = {
+      ["Select All"] = "<leader>m",
+      ["Visual All"] = "<leader>m",
+      ["Add Cursor Down"] = "\\j", -- \j backslash+j for Kitty
+      ["Add Cursor Up"] = "\\k", -- \k
+    }
+  end,
+  config = function()
+    -- Ctrl+j/k as you requested (overrides smart-splits window nav <C-j>/<C-k>)
+    vim.keymap.set({ "n", "x" }, "<C-j>", "<Plug>(VM-Add-Cursor-Down)", { remap = true, silent = true, desc = "VM Add Cursor Down (Ctrl+j)" })
+    vim.keymap.set({ "n", "x" }, "<C-k>", "<Plug>(VM-Add-Cursor-Up)", { remap = true, silent = true, desc = "VM Add Cursor Up (Ctrl+k)" })
+  end,
+}
