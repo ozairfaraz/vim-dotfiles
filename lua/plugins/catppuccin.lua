@@ -5,7 +5,10 @@ return {
     priority = 1000,
     opts = {
       flavour = "mocha",
-      transparent_background = false,
+      transparent_background = true,
+      float = {
+        transparent = true,
+      },
       integrations = {
         cmp = true,
         gitsigns = true,
@@ -19,5 +22,12 @@ return {
       },
     },
   },
-  { "LazyVim/LazyVim", opts = { colorscheme = "catppuccin" } },
+  {
+    "LazyVim/LazyVim",
+    opts = {
+      colorscheme = function()
+        require("catppuccin").load()
+      end,
+    },
+  },
 }
