@@ -76,6 +76,15 @@ map("n", "<leader>pa", function()
   print("file:", path)
 end, { desc = "Copy full file path" })
 
+-- <leader>i - generate a .gitignore from a github/gitignore template.
+-- Opens the cmdline pre-filled so template completion works; add ! to overwrite.
+-- <leader>i is a completely unused namespace, so this cannot collide with the
+-- <leader>g git/github block. Note: <Cmd> cannot be used here, it never enters
+-- cmdline mode (E1255), hence the explicit feedkeys.
+map("n", "<leader>i", function()
+  vim.fn.feedkeys(":Gitignore ", "n")
+end, { desc = "Gitignore: generate .gitignore" })
+
 -- Git quick actions (add / commit / push) - best fix for missing workflow
 -- Keeps lazygit as primary UI (<leader>gg), adds direct keys for the 3 most common ops
 -- Robust git_root: prefers buffer's git root (Snacks) then LazyVim root then cwd
